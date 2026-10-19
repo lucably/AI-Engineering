@@ -7,7 +7,7 @@ type Product = {
 
 type ToolCall = {
   name: string;
-  arguments: Record<string, unknown>;
+  arguments: unknown;
 };
 
 type Order = {
@@ -15,8 +15,20 @@ type Order = {
     status: string;
 }
 
+type User = {
+  id: number;
+  name: string;
+  age: number
+}
+
+interface OrderArguments {
+  orderId: number;
+}
+
 export {
     Product,
     ToolCall,
-    Order
+    Order,
+    User,
+    OrderArguments
 }

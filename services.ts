@@ -1,4 +1,4 @@
-import { Order, Product } from "./interface";
+import { Order, Product, User } from "./interface";
 
 //Mock data.
 const products: Product[] = [
@@ -9,6 +9,11 @@ const products: Product[] = [
 const orders: Order[] = [
   { id: 123, status: "delayed" },
   { id: 456, status: "delivered" },
+];
+
+const users: User[] = [
+  { id: 1, name: "Lucas", age: 30 },
+  { id: 2, name: "Carlos", age: 26 },
 ];
 
 
@@ -32,17 +37,32 @@ async function getOrder(orderId: number) {
     const order = orders.find((item) => item.id === orderId)
 
     if(!order) {
-        throw new Error("Pedido não encontrado")
+      throw new Error("Pedido não encontrado")
     }
 
     return {
-        id: order.id,
-        status: order.status,
+      id: order.id,
+      status: order.status,
+    }
+} 
+
+async function getUser(userId : number) {
+    const user = users.find((item) => item.id === userId )
+
+    if(!user) {
+      throw new Error("Usuário não encontrado")
+    }
+
+    return {
+      id: user.id,
+      name: user.name,
+      age: user.age
     }
 }
 
 
 export {
-    getStock,
-    getOrder
+  getStock,
+  getOrder,
+  getUser
 }

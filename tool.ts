@@ -1,57 +1,68 @@
-import { ToolCall } from './interface';
-import { getStock, getOrder } from './services';
+import { ToolCall } from "./interface";
+import { getStock, getOrder, getUser } from "./services";
+import { validateOrderId, validateUserId } from "./validateArguments";
 
-type ToolArguments = Record<string, unknown>;
-
-//Valida os parametros que irao vir das funcoes
-function validateOrderId(args: ToolArguments): string | null {
-  if (!Number.isInteger(args.orderId)) {
-    return "orderId deve ser um número inteiro.";
-  }
-
-  if ((args.orderId as number) <= 0) {
-    return "orderId deve ser maior que zero.";
-  }
-
-  return null;
-}
-
-// catálogo de ferramentas disponíveis.
 const toolRegistry = {
   get_stock: {
-    execute: getStock,
     validate: validateOrderId,
+    execute: (args: unknown) => {
+      if (!validateOrderId(args)) {
+        throw new Error("orderId inválido");
+      }
+
+      const orderId = (
+        args as { orderId: number }
+      ).orderId;
+
+      return getStock(orderId);
+    },
   },
+
   get_order: {
-    execute: getOrder,
     validate: validateOrderId,
+    execute: (args: unknown) => {
+      if (!validateOrderId(args)) {
+        throw new Error("orderId inválido");
+      }
+
+      const orderId = (
+        args as { orderId: number }
+      ).orderId;
+
+      return getOrder(orderId);
+    },
+  },
+
+  get_user: {
+    validate: validateUserId,
+    execute: (args: unknown) => {
+      if (!validateUserId(args)) {
+        throw new Error("userId inválido");
+      }
+
+      const userId = (
+        args as { userId: number }
+      ).userId;
+
+      return getUser(userId);
+    },
   },
 };
 
-// Pega as chaves para validacao das funcoes registradas
 type ToolName = keyof typeof toolRegistry;
 
+function isToolName(name: string): name is ToolName {
+  return Object.hasOwn(toolRegistry, name);
+}
+
 async function executeTool(toolCall: ToolCall) {
-  if (!Object.hasOwn(toolRegistry, toolCall.name)) {
-    throw new Error(
-      `Ferramenta desconhecida: ${toolCall.name}`,
-    );
+  if (!isToolName(toolCall.name)) {
+    throw new Error("Tool não encontrada");
   }
 
-  const toolName = toolCall.name as ToolName;
-  const tool = toolRegistry[toolName];
+  const tool = toolRegistry[toolCall.name];
 
-  const validationError = tool.validate(
-    toolCall.arguments,
-  );
-
-  if (validationError) {
-    throw new Error(validationError);
-  }
-
-  const orderId = toolCall.arguments.orderId as number;
-
-  return tool.execute(orderId);
+  return tool.execute(toolCall.arguments);
 }
 
 export {
