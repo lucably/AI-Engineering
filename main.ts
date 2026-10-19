@@ -13,7 +13,7 @@ async function main() {
   const toolCallGetOrder: ToolCall = {
     name: "get_order",
     arguments: {
-      orderId: 14523,
+      orderId: 123,
     },
   };
 
