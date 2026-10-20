@@ -1,3 +1,5 @@
+type ToolPermission = "read" | "write";
+
 type Product = {
   id: number;
   orderId: number;
@@ -21,14 +23,10 @@ type User = {
   age: number
 }
 
-interface OrderArguments {
-  orderId: number;
-}
-
 export {
+    ToolPermission,
     Product,
     ToolCall,
     Order,
-    User,
-    OrderArguments
+    User
 }

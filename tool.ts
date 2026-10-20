@@ -1,28 +1,31 @@
 import { ToolCall } from "./interface";
 import { getStock, getOrder, getUser } from "./services";
-import { validateOrderId, validateUserId } from "./validateArguments";
+import { userSchema, orderSchema } from "./validateArguments";
+
+const toolPermissions = {
+  get_stock: "read",
+  get_order: "read",
+  cancel_order: "write",
+} as const;
 
 const toolRegistry = {
   get_stock: {
-    validate: validateOrderId,
     execute: (args: unknown) => {
-      const orderId = validateOrderId(args);
+      const { orderId } = orderSchema.parse(args);
       return getStock(orderId);
     },
   },
 
   get_order: {
-    validate: validateOrderId,
     execute: (args: unknown) => {
-     const orderId = validateOrderId(args);
+     const { orderId } = orderSchema.parse(args);
      return getOrder(orderId);
     },
   },
 
   get_user: {
-    validate: validateUserId,
     execute: (args: unknown) => {
-      const userId = validateUserId(args);
+      const { userId } = userSchema.parse(args);
       return getUser(userId);
     },
   },
@@ -35,13 +38,18 @@ function isToolName(name: string): name is ToolName {
 }
 
 async function executeTool(toolCall: ToolCall) {
-  if (!isToolName(toolCall.name)) {
-    throw new Error("Tool não encontrada");
+  try {
+    if (!isToolName(toolCall.name)) {
+      throw new Error("Tool não encontrada");
+    }
+
+    const tool = toolRegistry[toolCall.name];
+
+    return await tool.execute(toolCall.arguments);
+  } catch (error) {
+    console.error("Erro ao executar ferramenta:", error);
+    throw error;
   }
-
-  const tool = toolRegistry[toolCall.name];
-
-  return tool.execute(toolCall.arguments);
 }
 
 export {
