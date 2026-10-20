@@ -6,14 +6,7 @@ const toolRegistry = {
   get_stock: {
     validate: validateOrderId,
     execute: (args: unknown) => {
-      if (!validateOrderId(args)) {
-        throw new Error("orderId inválido");
-      }
-
-      const orderId = (
-        args as { orderId: number }
-      ).orderId;
-
+      const orderId = validateOrderId(args);
       return getStock(orderId);
     },
   },
@@ -21,29 +14,15 @@ const toolRegistry = {
   get_order: {
     validate: validateOrderId,
     execute: (args: unknown) => {
-      if (!validateOrderId(args)) {
-        throw new Error("orderId inválido");
-      }
-
-      const orderId = (
-        args as { orderId: number }
-      ).orderId;
-
-      return getOrder(orderId);
+     const orderId = validateOrderId(args);
+     return getOrder(orderId);
     },
   },
 
   get_user: {
     validate: validateUserId,
     execute: (args: unknown) => {
-      if (!validateUserId(args)) {
-        throw new Error("userId inválido");
-      }
-
-      const userId = (
-        args as { userId: number }
-      ).userId;
-
+      const userId = validateUserId(args);
       return getUser(userId);
     },
   },
