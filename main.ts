@@ -33,5 +33,26 @@ async function main() {
   console.log("Resultado3:", result3);
 }
 
-// executar -> npx tsx main.ts
 main();
+
+
+/*
+
+Como o modelo sabe quais ferramentas existem?
+Precisamos fornecer ao modelo uma descrição das ferramentas disponíveis. Em APIs de modelos que oferecem tool calling ou function calling, normalmente enviamos informações como:
+- Nome da ferramenta.
+- Descrição do que ela faz.
+- Parâmetros esperados.
+- Tipos e restrições dos parâmetros.
+
+Por exemplo, uma descrição conceitual de get_order seria:
+
+const getOrderDefinition = {
+  name: "get_order",
+  description: "Consulta um pedido pelo seu identificador.",
+  parameters: {
+    orderId: "number",
+  },
+};
+
+*/

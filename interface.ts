@@ -10,6 +10,7 @@ type Product = {
 type ToolCall = {
   name: string;
   arguments: unknown;
+  approved?: boolean;
 };
 
 type Order = {

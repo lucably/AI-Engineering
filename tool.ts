@@ -1,4 +1,4 @@
-import { ToolCall } from "./interface";
+import { ToolCall, ToolPermission } from "./interface";
 import { getStock, getOrder, getUser } from "./services";
 import { userSchema, orderSchema } from "./validateArguments";
 
@@ -10,6 +10,7 @@ const toolPermissions = {
 
 const toolRegistry = {
   get_stock: {
+    permission: "read",
     execute: (args: unknown) => {
       const { orderId } = orderSchema.parse(args);
       return getStock(orderId);
@@ -17,6 +18,7 @@ const toolRegistry = {
   },
 
   get_order: {
+    permission: "read",
     execute: (args: unknown) => {
      const { orderId } = orderSchema.parse(args);
      return getOrder(orderId);
@@ -24,6 +26,7 @@ const toolRegistry = {
   },
 
   get_user: {
+    permission: "read",
     execute: (args: unknown) => {
       const { userId } = userSchema.parse(args);
       return getUser(userId);
@@ -44,6 +47,10 @@ async function executeTool(toolCall: ToolCall) {
     }
 
     const tool = toolRegistry[toolCall.name];
+
+    if (tool.permission === "write" && !toolCall.approved) {
+      throw new Error("Ação não autorizada");
+    }
 
     return await tool.execute(toolCall.arguments);
   } catch (error) {
