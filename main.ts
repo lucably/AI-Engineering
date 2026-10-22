@@ -1,6 +1,7 @@
 import { ToolCall } from "./interface";
 import { executeTool } from "./tool";
 
+//ARQUIVO INUTILIZADO. Era utilizado para simular o agente, hoje usamos o ollama para fazer isso. olhar o arquivo "ollama-agent-test.ts"
 
 async function main() {
   const toolCallGetStock: ToolCall = {

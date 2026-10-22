@@ -29,7 +29,8 @@ const tools = [
       parameters: {
         type: "object" as const,
         properties: {
-          orderId: { //Altere o tipo da variavel para "string" e verá que dará erro na hora da execução, tanto no Zod quanto no modelo
+          orderId: {
+            //Altere o tipo da variavel para "string" e verá que dará erro na hora da execução, tanto no Zod quanto no modelo
             type: "integer" as const,
             description: "Identificador numérico do pedido.",
           },
@@ -77,6 +78,8 @@ async function main() {
     },
   ];
 
+  const failedTools = new Set<string>(); // Set => Ele armazena valores únicos. Aqui, vamos guardar os nomes das ferramentas que falharam, exp: get_stock.
+
   for (let round = 0; round < MAX_ROUNDS; round++) {
     // O modelo analisa a pergunta e pode solicitar uma ferramenta.
     const response = await ollama.chat({
@@ -114,6 +117,22 @@ async function main() {
 
     // Executa as ferramentas solicitadas pelo modelo.
     for (const call of toolCalls) {
+
+      //Se tiver alguma falha em alguma ferramenta.
+      if (failedTools.has(call.function.name)) {
+        messages.push({
+          role: "tool",
+          tool_name: call.function.name,
+          content: JSON.stringify({
+            success: false,
+            error:
+              "Esta ferramenta já falhou nesta execução e não será executada novamente.",
+          }),
+        });
+
+        continue;
+      }
+
       try {
         // result => possui a resposta da API.
         const result = await executeTool({
@@ -128,10 +147,12 @@ async function main() {
           content: JSON.stringify(result),
         });
       } catch (error: unknown) {
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : "Erro desconhecido ao executar a ferramenta.";
+        console.error(
+          `Falha ao executar a ferramenta ${call.function.name}:`,
+          error,
+        );
+
+        failedTools.add(call.function.name);
 
         // O agente não precisa parar quando uma ferramenta falha.O catch transforma a falha em uma mensagem para o modelo:
         messages.push({
@@ -139,7 +160,7 @@ async function main() {
           tool_name: call.function.name,
           content: JSON.stringify({
             success: false,
-            error: errorMessage,
+            error: "Não foi possível concluir a consulta.",
           }),
         });
       }
