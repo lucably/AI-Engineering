@@ -29,7 +29,7 @@ const tools = [
       parameters: {
         type: "object" as const,
         properties: {
-          orderId: {
+          orderId: { //Altere o tipo da variavel para "string" e verá que dará erro na hora da execução, tanto no Zod quanto no modelo
             type: "integer" as const,
             description: "Identificador numérico do pedido.",
           },
@@ -78,7 +78,6 @@ async function main() {
   ];
 
   for (let round = 0; round < MAX_ROUNDS; round++) {
-
     // O modelo analisa a pergunta e pode solicitar uma ferramenta.
     const response = await ollama.chat({
       model: "qwen3:4b",
@@ -115,18 +114,35 @@ async function main() {
 
     // Executa as ferramentas solicitadas pelo modelo.
     for (const call of toolCalls) {
-      // result => possui a resposta da API.
-      const result = await executeTool({
-        name: call.function.name,
-        arguments: call.function.arguments,
-      });
+      try {
+        // result => possui a resposta da API.
+        const result = await executeTool({
+          name: call.function.name,
+          arguments: call.function.arguments,
+        });
 
-      // Guardamos a resposta do modelo.
-      messages.push({
-        role: "tool",
-        tool_name: call.function.name,
-        content: JSON.stringify(result),
-      });
+        // Guardamos a resposta do modelo.
+        messages.push({
+          role: "tool",
+          tool_name: call.function.name,
+          content: JSON.stringify(result),
+        });
+      } catch (error: unknown) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Erro desconhecido ao executar a ferramenta.";
+
+        // O agente não precisa parar quando uma ferramenta falha.O catch transforma a falha em uma mensagem para o modelo:
+        messages.push({
+          role: "tool",
+          tool_name: call.function.name,
+          content: JSON.stringify({
+            success: false,
+            error: errorMessage,
+          }),
+        });
+      }
     }
   }
 
