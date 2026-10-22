@@ -1,6 +1,8 @@
 import ollama, { type Message } from "ollama";
 import { executeTool } from "./tool";
 
+const MAX_ROUNDS = 5;
+
 const tools = [
   {
     type: "function" as const,
@@ -41,8 +43,8 @@ const tools = [
 async function main() {
   const messages: Message[] = [
     {
-        role: "system",
-        content: `
+      role: "system",
+      content: `
             Você é um assistente de atendimento ao cliente.
 
             REGRAS GERAIS:
@@ -72,51 +74,64 @@ async function main() {
     {
       role: "user",
       content: "Consulte o pedido 123 e verifique o estoque do pedido 123.",
-    }, 
+    },
   ];
 
-  // 1. O modelo analisa a pergunta e pode solicitar uma ferramenta.
-  const response = await ollama.chat({
-    model: "qwen3:4b",
-    messages,
-    tools,
-  });
+  for (let round = 0; round < MAX_ROUNDS; round++) {
 
-  // Guardamos a resposta do modelo, incluindo a solicitação da ferramenta.
-  messages.push(response.message);
-  console.log('response.message: ', response.message)
-
-  const toolCalls = response.message.tool_calls ?? [];
-
-  // Caso nenhuma tool seja chamada, responde apenas a pergunta solicitada.
-  if (toolCalls.length === 0) {
-    console.log("\n\n\nResposta final:", response.message.content);
-    return;
-  }
-
-  // 2. Nossa aplicação executa cada ferramenta solicitada.
-  for (const call of toolCalls) {
-    const result = await executeTool({
-      name: call.function.name,
-      arguments: call.function.arguments,
+    // O modelo analisa a pergunta e pode solicitar uma ferramenta.
+    const response = await ollama.chat({
+      model: "qwen3:4b",
+      messages,
+      tools,
     });
 
-    // 3. Devolvemos o resultado para o modelo.
-    messages.push({
-      role: "tool",
-      tool_name: call.function.name,
-      content: JSON.stringify(result),
-    });
+    // Guardamos a resposta do modelo, incluindo a solicitação da ferramenta.
+    messages.push(response.message);
+    console.log("response.message: ", response.message);
+
+    const toolCalls = response.message.tool_calls ?? [];
+
+    /* 
+        Quando o Ollama solicita uma ou mais ferramentas, o código não entra no if (toolCalls.length === 0), pois o array toolCalls contém 
+        as ferramentas solicitadas.
+
+        Em seguida, o código entra no for interno, executa cada ferramenta por meio de executeTool() e adiciona os resultados ao array messages 
+        usando messages.push().
+
+        Na próxima rodada, o histórico atualizado é enviado novamente ao Ollama. O modelo analisa os resultados e pode solicitar outras ferramentas 
+        ou produzir uma resposta final.
+
+        Quando o Ollama retorna uma resposta sem novas solicitações de ferramentas, toolCalls fica vazio. Nesse momento, o código entra no if, 
+        imprime a resposta final e encerra a execução com return.
+
+        A diferença essencial: executar uma ferramenta não esvazia automaticamente toolCalls. Esse array pertence à resposta atual do Ollama; 
+        a cada nova rodada, ele é criado novamente a partir da nova resposta do modelo.
+    */
+    if (toolCalls.length === 0) {
+      console.log("Resposta final:", response.message.content);
+      return;
+    }
+
+    // Executa as ferramentas solicitadas pelo modelo.
+    for (const call of toolCalls) {
+      // result => possui a resposta da API.
+      const result = await executeTool({
+        name: call.function.name,
+        arguments: call.function.arguments,
+      });
+
+      // Guardamos a resposta do modelo.
+      messages.push({
+        role: "tool",
+        tool_name: call.function.name,
+        content: JSON.stringify(result),
+      });
+    }
   }
 
-  // 4. O modelo recebe o resultado e formula a resposta final.
-  const finalResponse = await ollama.chat({
-    model: "qwen3:4b",
-    messages,
-    tools,
-  });
-
-  console.log("\n\n\nResposta final:", finalResponse.message.content);
+  // Só chega aqui se esgotar todas as rodadas.
+  throw new Error("O agente atingiu o limite de rodadas.");
 }
 
 main().catch((error: unknown) => {
