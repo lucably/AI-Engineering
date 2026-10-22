@@ -1,4 +1,3 @@
-
 import ollama, { type Message } from "ollama";
 import { executeTool } from "./tool";
 
@@ -20,19 +19,60 @@ const tools = [
       },
     },
   },
+  {
+    type: "function" as const,
+    function: {
+      name: "get_stock",
+      description: "Consulta o estoque de um pedido pelo seu identificador.",
+      parameters: {
+        type: "object" as const,
+        properties: {
+          orderId: {
+            type: "integer" as const,
+            description: "Identificador numérico do pedido.",
+          },
+        },
+        required: ["orderId"],
+      },
+    },
+  },
 ];
 
 async function main() {
   const messages: Message[] = [
     {
-      role: "system",
-      content:
-        "Quando perguntarem sobre o status de um pedido, use get_order e responda com base no resultado.",
+        role: "system",
+        content: `
+            Você é um assistente de atendimento ao cliente.
+
+            REGRAS GERAIS:
+            - Responda sempre em português brasileiro (pt-BR).
+            - Seja claro, educado e objetivo.
+            - Não invente informações.
+            - Baseie suas respostas nos resultados das ferramentas quando elas forem utilizadas.
+            - Se não tiver informações suficientes para responder, informe isso ao usuário.
+
+            USO DE FERRAMENTAS:
+            - Use get_order para consultar o status de um pedido.
+            - Use get_stock para consultar o estoque de um produto.
+            - Quando a pergunta exigir as duas informações, utilize as duas ferramentas.
+            - Não invente resultados de consultas que não foram executadas.
+        `,
     },
+    // Teste chamando uma tool na pergunta.
+    // {
+    //   role: "user",
+    //   content: "Qual é o status do meu pedido 123?",
+    // },
+    // Teste para quando não mandar uma tool na pergunta.
+    // {
+    //   role: "user",
+    //   content: "Olá! Como você pode me ajudar?",
+    // },
     {
       role: "user",
-      content: "Qual é o status do meu pedido 123?",
-    },
+      content: "Consulte o pedido 123 e verifique o estoque do pedido 123.",
+    }, 
   ];
 
   // 1. O modelo analisa a pergunta e pode solicitar uma ferramenta.
@@ -47,6 +87,12 @@ async function main() {
   console.log('response.message: ', response.message)
 
   const toolCalls = response.message.tool_calls ?? [];
+
+  // Caso nenhuma tool seja chamada, responde apenas a pergunta solicitada.
+  if (toolCalls.length === 0) {
+    console.log("\n\n\nResposta final:", response.message.content);
+    return;
+  }
 
   // 2. Nossa aplicação executa cada ferramenta solicitada.
   for (const call of toolCalls) {
