@@ -1,5 +1,3 @@
-type ToolPermission = "read" | "write";
-
 type Product = {
   id: number;
   orderId: number;
@@ -25,7 +23,6 @@ type User = {
 }
 
 export {
-    ToolPermission,
     Product,
     ToolCall,
     Order,

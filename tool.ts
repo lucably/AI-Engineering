@@ -1,12 +1,6 @@
-import { ToolCall, ToolPermission } from "./interface";
+import { ToolCall } from "./interface";
 import { getStock, getOrder, getUser } from "./services";
 import { userSchema, orderSchema } from "./validateArguments";
-
-const toolPermissions = {
-  get_stock: "read",
-  get_order: "read",
-  cancel_order: "write",
-} as const;
 
 const toolRegistry = {
   get_stock: {
